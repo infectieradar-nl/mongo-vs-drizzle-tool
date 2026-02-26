@@ -1,28 +1,10 @@
 import { router, procedure } from '../init';
-
-import { singleSurveyFlowRouter } from './participant-routers/single-survey-flow';
-
-import { projectsRouter } from './researcher-routers/projects';
-import { surveysRouter } from './researcher-routers/surveys';
-import { codeSetsRouter } from './researcher-routers/code-sets';
-import { dataAccessRouter } from './researcher-routers/data-access';
-
-// Group researcher-related routers
-const researcherRouter = router({
-  projects: projectsRouter,
-  surveys: surveysRouter,
-  codeSets: codeSetsRouter,
-  dataAccess: dataAccessRouter,
-});
-
-// Group participant-related routers
-const participantRouter = router({
-  singleSurveyFlow: singleSurveyFlowRouter,
-});
+import { drizzleRouter } from './drizzle-router';
+import { mongoRouter } from './mongo-router';
 
 export const appRouter = router({
-  researcher: researcherRouter,
-  participant: participantRouter,
+  mongo: mongoRouter,
+  drizzle: drizzleRouter,
 
   // Example health check
   health: procedure.query(async () => {

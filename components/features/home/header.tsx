@@ -1,6 +1,7 @@
 'use client'
 
 import { drizzleAuthClient } from "@/lib/auth/drizzle-auth-client"
+import { mongoAuthClient } from "@/lib/auth/mongo-auth-client"
 import { LogOutIcon, UserIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -12,16 +13,19 @@ interface HeaderProps {
     title: string
     userEmail: string
     logoutHref: string
+    authClient?: "drizzle" | "mongo"
 }
 
+const authClients = { drizzle: drizzleAuthClient, mongo: mongoAuthClient }
 
-const Header: React.FC<HeaderProps> = ({ title, userEmail, logoutHref }) => {
+const Header: React.FC<HeaderProps> = ({ title, userEmail, logoutHref, authClient = "drizzle" }) => {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
+    const client = authClients[authClient]
 
     const handleLogout = async () => {
         setIsLoading(true)
-        await drizzleAuthClient.signOut({
+        await client.signOut({
             fetchOptions: {
                 onSuccess: () => {
                     router.push(logoutHref)
@@ -37,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({ title, userEmail, logoutHref }) => {
     }
 
     return (
-        <header className="flex justify-between items-center p-4 w-full">
+        <header className="flex justify-between items-center w-full">
             <h1 className="text-lg font-bold">{title}</h1>
             <div className="flex items-center gap-2">
                 <UserIcon

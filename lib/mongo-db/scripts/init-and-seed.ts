@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { getDbForScript } from "./get-db-for-script";
+import { DbKey, getAllDbs } from "../db-registry-core";
 import { MONGO_COLLECTIONS } from "../collections";
 import {
   MONGO_BENCHMARK_STUDY_CONFIGS,
@@ -10,11 +10,15 @@ import {
 import { randomUUID } from "crypto";
 
 const seed = async () => {
-  const db = await getDbForScript();
-  const studiesCol = db.collection(MONGO_COLLECTIONS.studies);
-  const surveysCol = db.collection(MONGO_COLLECTIONS.surveys);
-  const participantsCol = db.collection(MONGO_COLLECTIONS.participants);
-  const responsesCol = db.collection(MONGO_COLLECTIONS.responses);
+  const { user: userDb, study: studyDb } = await getAllDbs();
+
+  // Touch the user DB to ensure both configured DB connections are initialized.
+  await userDb.collection(MONGO_COLLECTIONS.users).estimatedDocumentCount();
+
+  const studiesCol = studyDb.collection(MONGO_COLLECTIONS.studies);
+  const surveysCol = studyDb.collection(MONGO_COLLECTIONS.surveys);
+  const participantsCol = studyDb.collection(MONGO_COLLECTIONS.participants);
+  const responsesCol = studyDb.collection(MONGO_COLLECTIONS.responses);
 
   await Promise.all([
     studiesCol.createIndexes([
@@ -92,7 +96,7 @@ const seed = async () => {
   }
 
   console.log(
-    `Ensured benchmark indexes and seeded study '${MONGO_BENCHMARK_STUDY_KEY}' with ${MONGO_BENCHMARK_SURVEYS.length} benchmark surveys.`
+    `Ensured benchmark indexes and seeded study '${MONGO_BENCHMARK_STUDY_KEY}' with ${MONGO_BENCHMARK_SURVEYS.length} benchmark surveys (${DbKey.USER} DB initialized, ${DbKey.STUDY} DB seeded).`
   );
 };
 

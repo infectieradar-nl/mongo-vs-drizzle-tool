@@ -1,11 +1,11 @@
 import { betterAuth } from "better-auth";
-import { getDb } from "../mongo-db/db-registry";
+import { DbKey, getDb } from "../mongo-db/db-registry";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 
 const siteUrl = process.env.APP_URL!;
 
 
-const mongoDb = await getDb()
+const mongoDb = await getDb(DbKey.USER);
 
 export const mongoAuth = betterAuth({
     database: mongodbAdapter(mongoDb, {
@@ -35,4 +35,3 @@ export const mongoAuth = betterAuth({
 export default mongoAuth;
 
 export type MongoSession = typeof mongoAuth.$Infer.Session.session;
-

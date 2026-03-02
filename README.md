@@ -18,16 +18,19 @@ APP_URL=http://localhost:3000
 
 POSTGRES_DATABASE_URL=postgres://user:password@host:5432/dbname
 
-MONGO_URI=mongodb://user:password@host:27017
-MONGO_DBNAME=your_db_name
+MONGO_USERDB_URI=mongodb://user:password@host:27017
+MONGO_STUDYDB_URI=mongodb://user:password@host:27017
+
+MONGO_DBNAME=your_benchmark_db_name
 ```
 
 ### Variable reference
 
 - `APP_URL`: Base URL used by auth and API clients (address needed to access the app from the browser)
 - `POSTGRES_DATABASE_URL`: Required for Drizzle auth, Drizzle router, Drizzle migrations, and Drizzle seed/init.
-- `MONGO_URI`: Required for Mongo auth, Mongo router, and Mongo seed/init.
-- `MONGO_DBNAME`: Database name used for Mongo auth and benchmark collections.
+- `MONGO_USERDB_URI`: Mongo connection string used by Mongo auth (participant user/account/session collections).
+- `MONGO_STUDYDB_URI`: Mongo connection string used by Mongo benchmark study/survey/participant/response operations.
+- `MONGO_DBNAME`: Shared Mongo database name used by both Mongo auth and Mongo benchmark collections.
 
 Note: This app currently initializes both auth providers in shared server context, so provide all variables even if you mostly test one route.
 
@@ -53,7 +56,7 @@ npm run db:drizzle:init
 
 What they do:
 
-- `db:mongo:init`: Creates Mongo benchmark indexes and upserts benchmark study/surveys.
+- `db:mongo:init`: Initializes both Mongo DB connections, creates study DB benchmark indexes, and upserts benchmark study/surveys.
 - `db:drizzle:init`: Runs Drizzle schema push, then upserts benchmark study/surveys.
 
 ### OpenShift Job command examples

@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongo-db/db-registry";
+import { DbKey, getDb } from "@/lib/mongo-db/db-registry";
 import { MONGO_COLLECTIONS } from "@/lib/mongo-db/collections";
 import { mongoAuthProcedure as protectedProcedure, router } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
@@ -9,8 +9,8 @@ import { TRPCErrorCodes } from "../utils";
 export const mongoRouter = router({
   getUserCount: protectedProcedure.query(async () => {
     try {
-      const db = await getDb();
-      const userCount = await db.collection(MONGO_COLLECTIONS.users).countDocuments();
+      const userDb = await getDb(DbKey.USER);
+      const userCount = await userDb.collection(MONGO_COLLECTIONS.users).countDocuments();
       return userCount;
     } catch (error) {
       console.error("Error getting user count: " + error);
@@ -23,8 +23,8 @@ export const mongoRouter = router({
 
   getResponseCount: protectedProcedure.query(async () => {
     try {
-      const db = await getDb();
-      const responseCount = await db.collection(MONGO_COLLECTIONS.responses).countDocuments();
+      const studyDb = await getDb(DbKey.STUDY);
+      const responseCount = await studyDb.collection(MONGO_COLLECTIONS.responses).countDocuments();
       return responseCount;
     } catch (error) {
       console.error("Error getting response count: " + error);
@@ -51,10 +51,10 @@ export const mongoRouter = router({
         });
       }
 
-      const db = await getDb();
-      const studiesCol = db.collection(MONGO_COLLECTIONS.studies);
-      const surveysCol = db.collection(MONGO_COLLECTIONS.surveys);
-      const participantsCol = db.collection(MONGO_COLLECTIONS.participants);
+      const studyDb = await getDb(DbKey.STUDY);
+      const studiesCol = studyDb.collection(MONGO_COLLECTIONS.studies);
+      const surveysCol = studyDb.collection(MONGO_COLLECTIONS.surveys);
+      const participantsCol = studyDb.collection(MONGO_COLLECTIONS.participants);
 
       const study = await studiesCol.findOne({ key: input.studyKey });
       if (!study) {
@@ -159,11 +159,11 @@ export const mongoRouter = router({
         });
       }
 
-      const db = await getDb();
-      const studiesCol = db.collection(MONGO_COLLECTIONS.studies);
-      const surveysCol = db.collection(MONGO_COLLECTIONS.surveys);
-      const participantsCol = db.collection(MONGO_COLLECTIONS.participants);
-      const responsesCol = db.collection(MONGO_COLLECTIONS.responses);
+      const studyDb = await getDb(DbKey.STUDY);
+      const studiesCol = studyDb.collection(MONGO_COLLECTIONS.studies);
+      const surveysCol = studyDb.collection(MONGO_COLLECTIONS.surveys);
+      const participantsCol = studyDb.collection(MONGO_COLLECTIONS.participants);
+      const responsesCol = studyDb.collection(MONGO_COLLECTIONS.responses);
 
       const study = await studiesCol.findOne({ key: input.studyKey });
       if (!study) {
@@ -233,11 +233,11 @@ export const mongoRouter = router({
         });
       }
 
-      const db = await getDb();
-      const studiesCol = db.collection(MONGO_COLLECTIONS.studies);
-      const surveysCol = db.collection(MONGO_COLLECTIONS.surveys);
-      const participantsCol = db.collection(MONGO_COLLECTIONS.participants);
-      const responsesCol = db.collection(MONGO_COLLECTIONS.responses);
+      const studyDb = await getDb(DbKey.STUDY);
+      const studiesCol = studyDb.collection(MONGO_COLLECTIONS.studies);
+      const surveysCol = studyDb.collection(MONGO_COLLECTIONS.surveys);
+      const participantsCol = studyDb.collection(MONGO_COLLECTIONS.participants);
+      const responsesCol = studyDb.collection(MONGO_COLLECTIONS.responses);
 
       const study = await studiesCol.findOne({ key: input.studyKey });
       if (!study) {

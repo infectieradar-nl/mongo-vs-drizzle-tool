@@ -2,10 +2,12 @@
 
 import { LoadingButton } from "@/components/c-ui/loading-button";
 import {
-  useLoadSurveyByKeyMongo,
-  useSubmitSurveyResponseMongo,
-} from "@/components/hooks/mongo-router-hooks";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -14,27 +16,35 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  MONGO_BENCHMARK_STUDY_KEY,
-  MONGO_BENCHMARK_SURVEYS,
-} from "@/lib/mongo-db/benchmark-seed";
 import { getErrorMessage } from "@/lib/get-error-message";
 import { useState } from "react";
+import { DatabaseType } from "./dashboard-config";
+import { dashboardHooks } from "../../hooks/hooks-selector";
+import { benchmarkConstants } from "./constants-selector";
 
-const SURVEY_BUTTONS = MONGO_BENCHMARK_SURVEYS.map((survey) => ({
-  label: survey.label,
-  studyKey: MONGO_BENCHMARK_STUDY_KEY,
-  surveyKey: survey.surveyKey,
-}));
+interface TestSurveyFlowProps {
+  dbType: DatabaseType;
+}
 
 type FlowStatus = "idle" | "loading" | "success" | "error";
 
-const TestSurveyFlowMongo = () => {
-  const loadSurveyByKey = useLoadSurveyByKeyMongo();
-  const submitSurveyResponse = useSubmitSurveyResponseMongo();
+const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
+  const hooks = dashboardHooks[dbType];
+  const constants = benchmarkConstants[dbType];
+
+  const loadSurveyByKey = hooks.useLoadSurveyByKey();
+  const submitSurveyResponse = hooks.useSubmitSurveyResponse();
+
+  const SURVEY_BUTTONS = constants.surveys.map((survey) => ({
+    label: survey.label,
+    studyKey: constants.studyKey,
+    surveyKey: survey.surveyKey,
+  }));
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [loadingBySurveyKey, setLoadingBySurveyKey] = useState<Record<string, boolean>>({});
+  const [loadingBySurveyKey, setLoadingBySurveyKey] = useState<
+    Record<string, boolean>
+  >({});
   const [status, setStatus] = useState<FlowStatus>("idle");
   const [title, setTitle] = useState("Survey flow");
   const [message, setMessage] = useState("Ready");
@@ -101,7 +111,9 @@ const TestSurveyFlowMongo = () => {
     <Card className="w-96">
       <CardHeader>
         <CardTitle>Test Survey Flow</CardTitle>
-        <CardDescription>Simulate loading and submitting a survey.</CardDescription>
+        <CardDescription>
+          Simulate loading and submitting a survey.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex gap-2">
         {SURVEY_BUTTONS.map((button) => (
@@ -121,7 +133,11 @@ const TestSurveyFlowMongo = () => {
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
-              {isAnyButtonLoading ? "Loading..." : status === "success" ? "Success" : "Error"}
+              {isAnyButtonLoading
+                ? "Loading..."
+                : status === "success"
+                  ? "Success"
+                  : "Error"}
             </DialogDescription>
           </DialogHeader>
 
@@ -134,11 +150,14 @@ const TestSurveyFlowMongo = () => {
             )}
           </div>
 
-          <DialogFooter showCloseButton={!isAnyButtonLoading} closeLabel="Dismiss" />
+          <DialogFooter
+            showCloseButton={!isAnyButtonLoading}
+            closeLabel="Dismiss"
+          />
         </DialogContent>
       </Dialog>
     </Card>
   );
 };
 
-export default TestSurveyFlowMongo;
+export default TestSurveyFlow;

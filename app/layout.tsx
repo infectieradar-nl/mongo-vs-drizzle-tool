@@ -30,7 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <TRPCReactProvider>
-          <div className="flex flex-col min-h-screen justify-center items-center w-full">
+          <div className="flex flex-col min-h-screen items-center w-full max-w-7xl mx-auto p-6">
             {children}
           </div>
         </TRPCReactProvider>

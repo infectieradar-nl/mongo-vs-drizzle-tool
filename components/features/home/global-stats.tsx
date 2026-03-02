@@ -1,23 +1,29 @@
 "use client";
 
-import {
-  useGetResponseCountMongo,
-  useGetUserCountMongo,
-} from "@/components/hooks/mongo-router-hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatabaseType } from "./dashboard-config";
+import { dashboardHooks } from "../../hooks/hooks-selector";
 
-const GlobalStatsMongo = () => {
-  const { data: userCount, isLoading, error } = useGetUserCountMongo();
+interface GlobalStatsProps {
+  dbType: DatabaseType;
+}
+
+const GlobalStats: React.FC<GlobalStatsProps> = ({ dbType }) => {
+  const hooks = dashboardHooks[dbType];
+  const { data: userCount, isLoading, error } = hooks.useGetUserCount();
   const {
     data: responseCount,
     isLoading: responseCountLoading,
     error: responseCountError,
-  } = useGetResponseCountMongo();
+  } = hooks.useGetResponseCount();
 
-  if (isLoading || responseCountLoading) return <div>Loading global stats...</div>;
+  if (isLoading || responseCountLoading)
+    return <div>Loading global stats...</div>;
   if (error) return <div>Error fetching global stats: {error.message}</div>;
   if (responseCountError)
-    return <div>Error fetching response count: {responseCountError.message}</div>;
+    return (
+      <div>Error fetching response count: {responseCountError.message}</div>
+    );
 
   return (
     <Card className="w-64">
@@ -42,4 +48,4 @@ const GlobalStatsMongo = () => {
   );
 };
 
-export default GlobalStatsMongo;
+export default GlobalStats;

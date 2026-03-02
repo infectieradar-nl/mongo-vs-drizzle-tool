@@ -4,7 +4,7 @@ import GlobalStats from "./global-stats";
 import TestSurveyFlow from "./test-survey-flow";
 import RecentSurveyResponses from "./recent-survey-responses";
 import { Card, CardContent } from "@/components/ui/card";
-import { DatabaseType } from "./dashboard-config";
+import { DatabaseType } from "./types";
 
 interface DashboardPageProps {
   title: string;

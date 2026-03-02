@@ -1,4 +1,4 @@
-import { DatabaseType } from "./dashboard-config";
+import { DatabaseType } from "./types";
 import {
   DRIZZLE_BENCHMARK_STUDY_KEY,
   DRIZZLE_BENCHMARK_SURVEYS,

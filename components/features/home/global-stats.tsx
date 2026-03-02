@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DatabaseType } from "./dashboard-config";
+import { DatabaseType } from "./types";
 import { dashboardHooks } from "../../hooks/hooks-selector";
 
 interface GlobalStatsProps {

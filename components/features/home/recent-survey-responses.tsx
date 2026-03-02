@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getErrorMessage } from "@/lib/get-error-message";
-import { DatabaseType } from "./dashboard-config";
+import { DatabaseType } from "./types";
 import { dashboardHooks } from "../../hooks/hooks-selector";
 import { benchmarkConstants } from "./constants-selector";
 

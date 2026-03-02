@@ -1,18 +1,16 @@
 import DashboardPage from "@/components/features/home/dashboard-page";
-import { dashboardConfigs } from "@/components/features/home/dashboard-config";
 import { requireMongoAuth } from "@/lib/auth/utils";
 
 const Page = async () => {
   const session = await requireMongoAuth();
-  const config = dashboardConfigs.mongo;
 
   return (
     <DashboardPage
-      title={config.title}
+      title="Mongo Test Dashboard"
       userEmail={session.user.email}
-      logoutHref={config.logoutHref}
-      authClient={config.authClient}
-      dbType={config.dbType}
+      logoutHref="/mongo/login"
+      authClient="mongo"
+      dbType="mongo"
     />
   );
 };

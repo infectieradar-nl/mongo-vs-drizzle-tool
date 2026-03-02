@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { getErrorMessage } from "@/lib/get-error-message";
 import { useState } from "react";
-import { DatabaseType } from "./dashboard-config";
+import { DatabaseType } from "./types";
 import { dashboardHooks } from "../../hooks/hooks-selector";
 import { benchmarkConstants } from "./constants-selector";
 

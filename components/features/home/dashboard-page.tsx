@@ -22,25 +22,27 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   dbType,
 }) => {
   return (
-    <Card className="w-full shadow-lg">
-      <CardContent className="">
-        <div className="w-full space-y-4">
-          <Header
-            title={title}
-            userEmail={userEmail}
-            logoutHref={logoutHref}
-            authClient={authClient}
-          />
-          <div className="flex">
-            <TestSurveyFlow dbType={dbType} />
+    <div className="w-full min-h-screen p-6">
+      <Card className="w-full shadow-lg">
+        <CardContent>
+          <div className="w-full space-y-4">
+            <Header
+              title={title}
+              userEmail={userEmail}
+              logoutHref={logoutHref}
+              authClient={authClient}
+            />
+            <div className="flex">
+              <TestSurveyFlow dbType={dbType} />
+            </div>
+            <div className="flex">
+              <GlobalStats dbType={dbType} />
+            </div>
+            <RecentSurveyResponses dbType={dbType} />
           </div>
-          <div className="flex">
-            <GlobalStats dbType={dbType} />
-          </div>
-          <RecentSurveyResponses dbType={dbType} />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

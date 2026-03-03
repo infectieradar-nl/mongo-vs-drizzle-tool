@@ -1,4 +1,4 @@
-import { DatabaseType } from "../features/home/types";
+import type { DatabaseType } from "../../lib/types";
 import * as drizzleHooks from "@/components/hooks/drizzle-router-hooks";
 import * as mongoHooks from "@/components/hooks/mongo-router-hooks";
 

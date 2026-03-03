@@ -12,8 +12,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { drizzleAuthClient } from "@/lib/auth/drizzle-auth-client"
 import { mongoAuthClient } from "@/lib/auth/mongo-auth-client"
-
-type LoginAuthClient = "mongo" | "drizzle"
+import { LoginAuthClient } from "@/lib/types"
 
 type LoginFormProps = {
   title: string

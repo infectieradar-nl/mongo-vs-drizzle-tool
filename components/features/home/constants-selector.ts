@@ -1,4 +1,4 @@
-import { DatabaseType } from "./types";
+import type { DatabaseType } from "../../../lib/types";
 import {
   DRIZZLE_BENCHMARK_STUDY_KEY,
   DRIZZLE_BENCHMARK_SURVEYS,

@@ -37,7 +37,7 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
     Record<string, boolean>
   >({});
   const [status, setStatus] = useState<FlowStatus>("idle");
-  const [message, setMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [elapsedTimeMs, setElapsedTimeMs] = useState<number | null>(null);
 
   const runSurveyFlow = async (params: (typeof SURVEY_BUTTONS)[number]) => {
@@ -47,7 +47,7 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
       [params.surveyKey]: true,
     }));
     setStatus("loading");
-    setMessage(null);
+    setErrorMessage(null);
     setElapsedTimeMs(null);
 
     try {
@@ -69,12 +69,11 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
 
       const elapsed = Number((performance.now() - startedAt).toFixed(2));
       setStatus("success");
-      setMessage(`${params.label}: Success.`);
       setElapsedTimeMs(elapsed);
     } catch (error) {
       const elapsed = Number((performance.now() - startedAt).toFixed(2));
       setStatus("error");
-      setMessage(`${params.label}: ${getErrorMessage(error, "Failed.")}`);
+      setErrorMessage(`${params.label}: ${getErrorMessage(error, "Failed.")}`);
       setElapsedTimeMs(elapsed);
     } finally {
       setLoadingBySurveyKey((prev) => ({
@@ -110,8 +109,8 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
           {`Request duration: ${elapsedTimeMs === null ? "N/A" : `${elapsedTimeMs} ms`}`}
         </p>
 
-        {status === "error" && message && (
-          <p className="text-sm text-destructive">Error: {message}</p>
+        {status === "error" && errorMessage && (
+          <p className="text-sm text-destructive">Error: {errorMessage}</p>
         )}
       </CardContent>
     </Card>

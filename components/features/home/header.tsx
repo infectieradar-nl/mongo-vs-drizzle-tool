@@ -39,9 +39,8 @@ const Header: React.FC<HeaderProps> = ({
   const router = useRouter();
   const client = authClients[authClient];
 
-  const handleDatabaseChange = (newDbType: string) => {
-    const path = newDbType === "drizzle" ? "/drizzle" : "/mongo";
-    router.push(path);
+  const handleDatabaseChange = (newDbType: DatabaseType) => {
+    router.push(`/${newDbType}`);
   };
 
   const handleLogout = async () => {

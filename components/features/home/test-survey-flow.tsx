@@ -107,9 +107,7 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          {status === "loading"
-            ? "Loading survey and submitting response..."
-            : `Request duration: ${elapsedTimeMs === null ? "N/A" : `${elapsedTimeMs} ms`}`}
+          {`Request duration: ${elapsedTimeMs === null ? "N/A" : `${elapsedTimeMs} ms`}`}
         </p>
 
         {status === "error" && message && (

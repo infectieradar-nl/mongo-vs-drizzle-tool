@@ -17,12 +17,6 @@ const GlobalStats: React.FC<GlobalStatsProps> = ({ dbType }) => {
     error: responseCountError,
   } = hooks.useGetResponseCount();
 
-  if (error) return <div>Error fetching global stats: {error.message}</div>;
-  if (responseCountError)
-    return (
-      <div>Error fetching response count: {responseCountError.message}</div>
-    );
-
   return (
     <Card className="w-64">
       <CardHeader>
@@ -45,6 +39,16 @@ const GlobalStats: React.FC<GlobalStatsProps> = ({ dbType }) => {
             {responseCountLoading ? "..." : responseCount}
           </span>
         </p>
+        {error && (
+          <p className="text-sm text-destructive">
+            Error (user count): {error.message}
+          </p>
+        )}
+        {responseCountError && (
+          <p className="text-sm text-destructive">
+            Error (response count): {responseCountError.message}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

@@ -17,8 +17,6 @@ const GlobalStats: React.FC<GlobalStatsProps> = ({ dbType }) => {
     error: responseCountError,
   } = hooks.useGetResponseCount();
 
-  if (isLoading || responseCountLoading)
-    return <div>Loading global stats...</div>;
   if (error) return <div>Error fetching global stats: {error.message}</div>;
   if (responseCountError)
     return (
@@ -33,14 +31,18 @@ const GlobalStats: React.FC<GlobalStatsProps> = ({ dbType }) => {
       <CardContent className="flex flex-col gap-2">
         <p className="flex justify-between items-center">
           <span className="">User count: </span>
-          <span className="font-bold font-mono text-end min-w-30 bg-muted rounded-md p-1">
-            {userCount}
+          <span
+            className={`font-bold font-mono text-end min-w-30 bg-muted rounded-md p-1 ${isLoading ? "animate-pulse" : ""}`}
+          >
+            {isLoading ? "..." : userCount}
           </span>
         </p>
         <p className="flex justify-between items-center">
           <span className="">Responses: </span>
-          <span className="font-bold font-mono text-end min-w-30 bg-muted rounded-md p-1">
-            {responseCount}
+          <span
+            className={`font-bold font-mono text-end min-w-30 bg-muted rounded-md p-1 ${responseCountLoading ? "animate-pulse" : ""}`}
+          >
+            {responseCountLoading ? "..." : responseCount}
           </span>
         </p>
       </CardContent>

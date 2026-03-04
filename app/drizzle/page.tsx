@@ -6,7 +6,6 @@ const Page = async () => {
 
   return (
     <DashboardPage
-      title="Drizzle ORM Test Dashboard"
       userEmail={session.user.email}
       logoutHref="/drizzle/login"
       authClient="drizzle"

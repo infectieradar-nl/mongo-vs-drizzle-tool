@@ -11,6 +11,8 @@ import { TRPCError } from "@trpc/server";
 import { and, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCErrorCodes } from "../utils";
+import { startStressTest, getStressTestProgress } from "@/lib/auth/account-stress-test";
+import drizzleAuth from "@/lib/auth/drizzle-auth";
 
 export const drizzleRouter = router({
   getUserCount: protectedProcedure.query(async () => {
@@ -273,5 +275,35 @@ export const drizzleRouter = router({
         surveyId: surveyResult.survey.id,
         responses,
       };
+    }),
+
+  startAccountStressTest: protectedProcedure
+    .input(
+      z.object({
+        totalCount: z.number().int().min(1).max(10000),
+        concurrencyLimit: z.number().int().min(1).max(10000),
+        deleteAfterwards: z.boolean(),
+      }),
+    )
+    .mutation(({ input }) => {
+      const testId = startStressTest(drizzleAuth, "drizzle-auth", {
+        totalCount: input.totalCount,
+        concurrencyLimit: input.concurrencyLimit,
+        deleteAfterwards: input.deleteAfterwards,
+      });
+      return { testId };
+    }),
+
+  getAccountStressTestProgress: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .query(({ input }) => {
+      const progress = getStressTestProgress(input.testId);
+      if (!progress) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Stress test not found",
+        });
+      }
+      return progress;
     }),
 });

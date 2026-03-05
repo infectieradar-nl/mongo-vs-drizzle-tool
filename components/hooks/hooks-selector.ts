@@ -8,6 +8,8 @@ export interface DashboardHooks {
   useLoadSurveyByKey: typeof drizzleHooks.useLoadSurveyByKey;
   useGetRecentParticipantResponsesBySurveyKey: typeof drizzleHooks.useGetRecentParticipantResponsesBySurveyKey;
   useSubmitSurveyResponse: typeof drizzleHooks.useSubmitSurveyResponse;
+  useStartAccountStressTest: typeof drizzleHooks.useStartAccountStressTest;
+  useGetAccountStressTestProgress: typeof drizzleHooks.useGetAccountStressTestProgress;
 }
 
 export const dashboardHooks: Record<DatabaseType, DashboardHooks> = {

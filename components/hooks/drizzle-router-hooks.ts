@@ -84,3 +84,23 @@ export const useSubmitSurveyResponse = () => {
         }),
     );
 }
+
+export const useStartAccountStressTest = () => {
+    const trpc = useTRPC();
+    return useMutation(
+        trpc.drizzle.startAccountStressTest.mutationOptions(),
+    );
+}
+
+export const useGetAccountStressTestProgress = (testId: string | null, enabled: boolean = true) => {
+    const trpc = useTRPC();
+    return useQuery({
+        ...trpc.drizzle.getAccountStressTestProgress.queryOptions(
+            { testId: testId! },
+        ),
+        enabled: !!testId && enabled,
+        refetchInterval: 200,
+        staleTime: 0,
+        gcTime: 0,
+    });
+}

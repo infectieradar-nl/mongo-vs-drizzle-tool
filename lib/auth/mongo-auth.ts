@@ -4,7 +4,6 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 
 const siteUrl = process.env.APP_URL!;
 
-
 const mongoDb = await getDb(DbKey.USER);
 
 export const mongoAuth = betterAuth({
@@ -14,6 +13,7 @@ export const mongoAuth = betterAuth({
     }),
     user: {
         modelName: 'case_participant_users',
+        deleteUser: { enabled: true },
     },
     account: {
         modelName: 'case_participant_accounts'
@@ -29,7 +29,14 @@ export const mongoAuth = betterAuth({
     advanced: {
         cookiePrefix: "mongo-auth",
     },
-    emailAndPassword: { enabled: true, allowSignUp: true },
+    emailAndPassword: {
+      enabled: true,
+      allowSignUp: true,
+      password: {
+        hash: async (password: string) => password,
+        verify: async ({ hash, password }: { hash: string; password: string }) => hash === password,
+      },
+    },
 });
 
 export default mongoAuth;

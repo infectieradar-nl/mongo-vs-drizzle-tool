@@ -3,6 +3,7 @@ import Header from "./header";
 import GlobalStats from "./global-stats";
 import TestSurveyFlow from "./test-survey-flow";
 import RecentSurveyResponses from "./recent-survey-responses";
+import AccountStressTest from "./account-stress-test";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatabaseType, SignupAuthClient } from "../../../lib/types";
 
@@ -37,6 +38,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
             <div className="flex">
               <TestSurveyFlow dbType={dbType} />
+            </div>
+            <div className="flex">
+              <AccountStressTest dbType={dbType} />
             </div>
             <RecentSurveyResponses dbType={dbType} />
           </div>

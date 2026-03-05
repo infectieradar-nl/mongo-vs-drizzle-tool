@@ -17,7 +17,14 @@ export const drizzleAuth = betterAuth({
         },
     }),
     basePath: "/api/auth/drizzle",
-    emailAndPassword: { enabled: true },
+    emailAndPassword: {
+      enabled: true,
+      password: {
+        hash: async (password: string) => password,
+        verify: async ({ hash, password }: { hash: string; password: string }) => hash === password,
+      },
+    },
+    user: { deleteUser: { enabled: true } },
     baseURL: siteUrl,
     advanced: {
         cookiePrefix: "drizzle-auth",

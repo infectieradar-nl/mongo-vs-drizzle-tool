@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DatabaseType, SignupAuthClient } from "../../../lib/types";
 
 interface DashboardPageProps {
-  title: string;
   userEmail: string;
   logoutHref: string;
   authClient: SignupAuthClient;
@@ -15,28 +14,29 @@ interface DashboardPageProps {
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = ({
-  title,
   userEmail,
   logoutHref,
   authClient,
   dbType,
 }) => {
   return (
-    <div className="w-full min-h-screen p-6">
-      <Card className="w-full shadow-lg">
+    <div className="w-full min-h-screen p-6 space-y-6">
+      <Header
+        title="Database Test Dashboard"
+        userEmail={userEmail}
+        logoutHref={logoutHref}
+        authClient={authClient}
+        dbType={dbType}
+      />
+      <Card className="w-full shadow-md">
         <CardContent>
           <div className="w-full space-y-4">
-            <Header
-              title={title}
-              userEmail={userEmail}
-              logoutHref={logoutHref}
-              authClient={authClient}
-            />
-            <div className="flex">
-              <TestSurveyFlow dbType={dbType} />
-            </div>
+            <h1 className="text-lg font-bold">Quick Actions</h1>
             <div className="flex">
               <GlobalStats dbType={dbType} />
+            </div>
+            <div className="flex">
+              <TestSurveyFlow dbType={dbType} />
             </div>
             <RecentSurveyResponses dbType={dbType} />
           </div>

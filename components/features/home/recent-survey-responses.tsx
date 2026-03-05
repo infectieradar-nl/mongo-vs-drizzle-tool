@@ -37,7 +37,7 @@ const SurveyResponsesCard: React.FC<SurveyResponsesCardProps> = ({
   return (
     <Card className="w-80">
       <CardHeader>
-        <CardTitle>{label}</CardTitle>
+        <CardTitle>Get Responses: {label}</CardTitle>
         <CardDescription>Key: {surveyKey}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

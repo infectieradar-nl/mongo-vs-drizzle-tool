@@ -6,7 +6,6 @@ const Page = async () => {
 
   return (
     <DashboardPage
-      title="Mongo Test Dashboard"
       userEmail={session.user.email}
       logoutHref="/mongo/login"
       authClient="mongo"

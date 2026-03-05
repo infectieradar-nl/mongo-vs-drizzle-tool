@@ -8,14 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { getErrorMessage } from "@/lib/get-error-message";
 import { useState } from "react";
 import type { DatabaseType } from "../../../lib/types";
@@ -41,16 +33,12 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
     surveyKey: survey.surveyKey,
   }));
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingBySurveyKey, setLoadingBySurveyKey] = useState<
     Record<string, boolean>
   >({});
   const [status, setStatus] = useState<FlowStatus>("idle");
-  const [title, setTitle] = useState("Survey flow");
-  const [message, setMessage] = useState("Ready");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [elapsedTimeMs, setElapsedTimeMs] = useState<number | null>(null);
-
-  const isAnyButtonLoading = Object.values(loadingBySurveyKey).some(Boolean);
 
   const runSurveyFlow = async (params: (typeof SURVEY_BUTTONS)[number]) => {
     const startedAt = performance.now();
@@ -59,10 +47,8 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
       [params.surveyKey]: true,
     }));
     setStatus("loading");
-    setTitle(`Running ${params.label}`);
-    setMessage("Loading survey and creating/submitting response...");
+    setErrorMessage(null);
     setElapsedTimeMs(null);
-    setIsDialogOpen(true);
 
     try {
       const { participant, survey } = await loadSurveyByKey.mutateAsync({
@@ -83,14 +69,11 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
 
       const elapsed = Number((performance.now() - startedAt).toFixed(2));
       setStatus("success");
-      setTitle(`${params.label} complete`);
-      setMessage("Survey response submitted successfully.");
       setElapsedTimeMs(elapsed);
     } catch (error) {
       const elapsed = Number((performance.now() - startedAt).toFixed(2));
       setStatus("error");
-      setTitle(`${params.label} failed`);
-      setMessage(getErrorMessage(error, "Survey flow failed"));
+      setErrorMessage(`${params.label}: ${getErrorMessage(error, "Failed.")}`);
       setElapsedTimeMs(elapsed);
     } finally {
       setLoadingBySurveyKey((prev) => ({
@@ -98,13 +81,6 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
         [params.surveyKey]: false,
       }));
     }
-  };
-
-  const handleDialogChange = (open: boolean) => {
-    if (isAnyButtonLoading) {
-      return;
-    }
-    setIsDialogOpen(open);
   };
 
   return (
@@ -115,47 +91,28 @@ const TestSurveyFlow: React.FC<TestSurveyFlowProps> = ({ dbType }) => {
           Simulate loading and submitting a survey.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex gap-2">
-        {SURVEY_BUTTONS.map((button) => (
-          <LoadingButton
-            key={button.surveyKey}
-            className="grow"
-            isLoading={Boolean(loadingBySurveyKey[button.surveyKey])}
-            onClick={() => runSurveyFlow(button)}
-          >
-            {button.label}
-          </LoadingButton>
-        ))}
+      <CardContent className="space-y-3">
+        <div className="flex gap-2">
+          {SURVEY_BUTTONS.map((button) => (
+            <LoadingButton
+              key={button.surveyKey}
+              className="grow"
+              isLoading={Boolean(loadingBySurveyKey[button.surveyKey])}
+              onClick={() => runSurveyFlow(button)}
+            >
+              {button.label}
+            </LoadingButton>
+          ))}
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          {`Request duration: ${elapsedTimeMs === null ? "N/A" : `${elapsedTimeMs} ms`}`}
+        </p>
+
+        {status === "error" && errorMessage && (
+          <p className="text-sm text-destructive">Error: {errorMessage}</p>
+        )}
       </CardContent>
-
-      <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent showCloseButton={!isAnyButtonLoading}>
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>
-              {isAnyButtonLoading
-                ? "Loading..."
-                : status === "success"
-                  ? "Success"
-                  : "Error"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            <p>{message}</p>
-            {elapsedTimeMs !== null && (
-              <p className="text-sm text-muted-foreground">
-                Elapsed time: {elapsedTimeMs} ms
-              </p>
-            )}
-          </div>
-
-          <DialogFooter
-            showCloseButton={!isAnyButtonLoading}
-            closeLabel="Dismiss"
-          />
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };

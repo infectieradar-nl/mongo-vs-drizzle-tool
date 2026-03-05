@@ -13,8 +13,8 @@ import { Input } from "@/components/ui/input"
 import { drizzleAuthClient } from "@/lib/auth/drizzle-auth-client"
 import { mongoAuthClient } from "@/lib/auth/mongo-auth-client"
 import { useRouter } from "next/navigation"
+import { SignupAuthClient } from "@/lib/types"
 
-type SignupAuthClient = "mongo" | "drizzle"
 
 type SignupFormProps = {
     title: string

@@ -1,31 +1,38 @@
 "use client";
 
 import { LoadingButton } from "@/components/c-ui/loading-button";
-import { useGetRecentParticipantResponsesBySurveyKeyMongo } from "@/components/hooks/mongo-router-hooks";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  MONGO_BENCHMARK_STUDY_KEY,
-  MONGO_BENCHMARK_SURVEYS,
-} from "@/lib/mongo-db/benchmark-seed";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getErrorMessage } from "@/lib/get-error-message";
+import type { DatabaseType } from "../../../lib/types";
+import { dashboardHooks } from "../../hooks/hooks-selector";
+import { benchmarkConstants } from "./constants-selector";
 
-const SURVEYS = MONGO_BENCHMARK_SURVEYS.map((survey) => ({
-  label: survey.label,
-  studyKey: MONGO_BENCHMARK_STUDY_KEY,
-  surveyKey: survey.surveyKey,
-}));
+interface RecentSurveyResponsesProps {
+  dbType: DatabaseType;
+}
 
-const SurveyResponsesCard = ({
-  label,
-  studyKey,
-  surveyKey,
-}: {
+interface SurveyResponsesCardProps {
   label: string;
   studyKey: string;
   surveyKey: string;
+  dbType: DatabaseType;
+}
+
+const SurveyResponsesCard: React.FC<SurveyResponsesCardProps> = ({
+  label,
+  studyKey,
+  surveyKey,
+  dbType,
 }) => {
+  const hooks = dashboardHooks[dbType];
   const { data, isLoading, isFetching, error, refetch, requestDurationMs } =
-    useGetRecentParticipantResponsesBySurveyKeyMongo({ studyKey, surveyKey });
+    hooks.useGetRecentParticipantResponsesBySurveyKey({ studyKey, surveyKey });
 
   return (
     <Card className="w-80">
@@ -43,7 +50,8 @@ const SurveyResponsesCard = ({
         )}
 
         <p className="text-sm text-muted-foreground">
-          Request duration: {requestDurationMs === null ? "N/A" : `${requestDurationMs} ms`}
+          Request duration:{" "}
+          {requestDurationMs === null ? "N/A" : `${requestDurationMs} ms`}
         </p>
 
         <LoadingButton
@@ -59,7 +67,17 @@ const SurveyResponsesCard = ({
   );
 };
 
-const RecentSurveyResponsesMongo = () => {
+const RecentSurveyResponses: React.FC<RecentSurveyResponsesProps> = ({
+  dbType,
+}) => {
+  const constants = benchmarkConstants[dbType];
+
+  const SURVEYS = constants.surveys.map((survey) => ({
+    label: survey.label,
+    studyKey: constants.studyKey,
+    surveyKey: survey.surveyKey,
+  }));
+
   return (
     <div className="flex flex-wrap gap-4">
       {SURVEYS.map((survey) => (
@@ -68,10 +86,11 @@ const RecentSurveyResponsesMongo = () => {
           label={survey.label}
           studyKey={survey.studyKey}
           surveyKey={survey.surveyKey}
+          dbType={dbType}
         />
       ))}
     </div>
   );
 };
 
-export default RecentSurveyResponsesMongo;
+export default RecentSurveyResponses;

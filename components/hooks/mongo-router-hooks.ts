@@ -12,7 +12,7 @@ const liveCountQueryOptions = {
   refetchIntervalInBackground: true,
 };
 
-export const useGetUserCountMongo = () => {
+export const useGetUserCount = () => {
   const trpc = useTRPC();
   return useQuery({
     ...trpc.mongo.getUserCount.queryOptions(),
@@ -20,7 +20,7 @@ export const useGetUserCountMongo = () => {
   });
 };
 
-export const useGetResponseCountMongo = () => {
+export const useGetResponseCount = () => {
   const trpc = useTRPC();
   return useQuery({
     ...trpc.mongo.getResponseCount.queryOptions(),
@@ -28,7 +28,7 @@ export const useGetResponseCountMongo = () => {
   });
 };
 
-export const useLoadSurveyByKeyMongo = () => {
+export const useLoadSurveyByKey = () => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   return useMutation({
@@ -42,13 +42,16 @@ export const useLoadSurveyByKeyMongo = () => {
   });
 };
 
-export const useGetRecentParticipantResponsesBySurveyKeyMongo = (input: {
+export const useGetRecentParticipantResponsesBySurveyKey = (input: {
   studyKey: string;
   surveyKey: string;
 }) => {
   const trpc = useTRPC();
-  const [requestDurationMs, setRequestDurationMs] = useState<number | null>(null);
-  const queryOptions = trpc.mongo.getRecentParticipantResponsesBySurveyKey.queryOptions(input);
+  const [requestDurationMs, setRequestDurationMs] = useState<number | null>(
+    null,
+  );
+  const queryOptions =
+    trpc.mongo.getRecentParticipantResponsesBySurveyKey.queryOptions(input);
 
   const query = useQuery({
     ...queryOptions,
@@ -63,7 +66,9 @@ export const useGetRecentParticipantResponsesBySurveyKeyMongo = (input: {
         }
         return await queryOptions.queryFn(context);
       } finally {
-        setRequestDurationMs(Number((performance.now() - startedAt).toFixed(2)));
+        setRequestDurationMs(
+          Number((performance.now() - startedAt).toFixed(2)),
+        );
       }
     },
   });
@@ -74,16 +79,16 @@ export const useGetRecentParticipantResponsesBySurveyKeyMongo = (input: {
   };
 };
 
-export const useSubmitSurveyResponseMongo = () => {
+export const useSubmitSurveyResponse = () => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   return useMutation(
     trpc.mongo.submitSurveyResponse.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries(
-          trpc.mongo.getRecentParticipantResponsesBySurveyKey.pathFilter()
+          trpc.mongo.getRecentParticipantResponsesBySurveyKey.pathFilter(),
         );
       },
-    })
+    }),
   );
 };

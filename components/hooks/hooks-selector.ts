@@ -5,11 +5,14 @@ import * as mongoHooks from "@/components/hooks/mongo-router-hooks";
 export interface DashboardHooks {
   useGetUserCount: typeof drizzleHooks.useGetUserCount;
   useGetResponseCount: typeof drizzleHooks.useGetResponseCount;
+  useGetDummyUserCount: typeof drizzleHooks.useGetDummyUserCount;
   useLoadSurveyByKey: typeof drizzleHooks.useLoadSurveyByKey;
   useGetRecentParticipantResponsesBySurveyKey: typeof drizzleHooks.useGetRecentParticipantResponsesBySurveyKey;
   useSubmitSurveyResponse: typeof drizzleHooks.useSubmitSurveyResponse;
   useStartAccountStressTest: typeof drizzleHooks.useStartAccountStressTest;
   useGetAccountStressTestProgress: typeof drizzleHooks.useGetAccountStressTestProgress;
+  usePurgeAllOtherUsers: typeof drizzleHooks.usePurgeAllOtherUsers;
+  usePurgeAllResponses: typeof drizzleHooks.usePurgeAllResponses;
 }
 
 export const dashboardHooks: Record<DatabaseType, DashboardHooks> = {

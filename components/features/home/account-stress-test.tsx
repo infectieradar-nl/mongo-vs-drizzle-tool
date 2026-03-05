@@ -30,7 +30,10 @@ const AccountStressTest: React.FC<AccountStressTestProps> = ({ dbType }) => {
   const [shouldPoll, setShouldPoll] = useState(true);
 
   const startMutation = hooks.useStartAccountStressTest();
-  const { data: progress } = hooks.useGetAccountStressTestProgress(testId, shouldPoll);
+  const { data: progress } = hooks.useGetAccountStressTestProgress(
+    testId,
+    shouldPoll,
+  );
 
   // Stop polling once test is complete
   if (progress && !progress.running && shouldPoll) {
@@ -64,9 +67,9 @@ const AccountStressTest: React.FC<AccountStressTestProps> = ({ dbType }) => {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>User Account Stress Test</CardTitle>
+        <CardTitle>Dummy User Accounts</CardTitle>
         <CardDescription>
-          Signup → Sign in → Change password → {deleteAfterwards ? "Delete account" : "Sign out"}
+          Signup → Sign in → {deleteAfterwards ? "Delete account" : "Sign out"}
         </CardDescription>
       </CardHeader>
 
@@ -115,7 +118,11 @@ const AccountStressTest: React.FC<AccountStressTestProps> = ({ dbType }) => {
 
         {/* Action button */}
         {isDone ? (
-          <LoadingButton className="w-full" onClick={handleReset} isLoading={false}>
+          <LoadingButton
+            className="w-full"
+            onClick={handleReset}
+            isLoading={false}
+          >
             Reset
           </LoadingButton>
         ) : (
@@ -157,14 +164,17 @@ const AccountStressTest: React.FC<AccountStressTestProps> = ({ dbType }) => {
             {isDone && progress.averageDurationMs !== null && (
               <p className="text-sm font-medium">
                 Avg. workflow duration:{" "}
-                <span className="font-mono">{progress.averageDurationMs} ms</span>
+                <span className="font-mono">
+                  {progress.averageDurationMs} ms
+                </span>
               </p>
             )}
 
             {isDone && progress.errors.length > 0 && (
               <details className="text-xs text-destructive">
                 <summary className="cursor-pointer font-medium">
-                  {progress.errors.length} error{progress.errors.length !== 1 ? "s" : ""} – click to expand
+                  {progress.errors.length} error
+                  {progress.errors.length !== 1 ? "s" : ""} – click to expand
                 </summary>
                 <ul className="mt-2 list-disc pl-4 space-y-1">
                   {progress.errors.map((err, i) => (

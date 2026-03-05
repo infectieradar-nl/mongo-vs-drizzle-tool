@@ -5,14 +5,20 @@ import { TRPCError } from "@trpc/server";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { TRPCErrorCodes } from "../utils";
-import { startStressTest, getStressTestProgress } from "@/lib/auth/account-stress-test";
+import {
+  startStressTest,
+  getStressTestProgress,
+  emailPrefix,
+} from "@/lib/auth/account-stress-test";
 import mongoAuth from "@/lib/auth/mongo-auth";
 
 export const mongoRouter = router({
   getUserCount: protectedProcedure.query(async () => {
     try {
       const userDb = await getDb(DbKey.USER);
-      const userCount = await userDb.collection(MONGO_COLLECTIONS.users).countDocuments();
+      const userCount = await userDb
+        .collection(MONGO_COLLECTIONS.users)
+        .countDocuments();
       return userCount;
     } catch (error) {
       console.error("Error getting user count: " + error);
@@ -23,10 +29,30 @@ export const mongoRouter = router({
     }
   }),
 
+  getDummyUserCount: protectedProcedure.query(async () => {
+    try {
+      const userDb = await getDb(DbKey.USER);
+      const count = await userDb
+        .collection(MONGO_COLLECTIONS.users)
+        .countDocuments({
+          email: { $regex: `^${emailPrefix}` },
+        });
+      return count;
+    } catch (error) {
+      console.error("Error getting dummy user count: " + error);
+      throw new TRPCError({
+        code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
+        message: "Error getting dummy user count",
+      });
+    }
+  }),
+
   getResponseCount: protectedProcedure.query(async () => {
     try {
       const studyDb = await getDb(DbKey.STUDY);
-      const responseCount = await studyDb.collection(MONGO_COLLECTIONS.responses).countDocuments();
+      const responseCount = await studyDb
+        .collection(MONGO_COLLECTIONS.responses)
+        .countDocuments();
       return responseCount;
     } catch (error) {
       console.error("Error getting response count: " + error);
@@ -42,7 +68,7 @@ export const mongoRouter = router({
       z.object({
         studyKey: z.string().min(1),
         surveyKey: z.string().min(1),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.id;
@@ -56,7 +82,9 @@ export const mongoRouter = router({
       const studyDb = await getDb(DbKey.STUDY);
       const studiesCol = studyDb.collection(MONGO_COLLECTIONS.studies);
       const surveysCol = studyDb.collection(MONGO_COLLECTIONS.surveys);
-      const participantsCol = studyDb.collection(MONGO_COLLECTIONS.participants);
+      const participantsCol = studyDb.collection(
+        MONGO_COLLECTIONS.participants,
+      );
 
       const study = await studiesCol.findOne({ key: input.studyKey });
       if (!study) {
@@ -150,7 +178,7 @@ export const mongoRouter = router({
         surveyKey: z.string().min(1),
         participantId: z.string().uuid(),
         data: z.record(z.string(), z.unknown()).default({}),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.user.id;
@@ -164,7 +192,9 @@ export const mongoRouter = router({
       const studyDb = await getDb(DbKey.STUDY);
       const studiesCol = studyDb.collection(MONGO_COLLECTIONS.studies);
       const surveysCol = studyDb.collection(MONGO_COLLECTIONS.surveys);
-      const participantsCol = studyDb.collection(MONGO_COLLECTIONS.participants);
+      const participantsCol = studyDb.collection(
+        MONGO_COLLECTIONS.participants,
+      );
       const responsesCol = studyDb.collection(MONGO_COLLECTIONS.responses);
 
       const study = await studiesCol.findOne({ key: input.studyKey });
@@ -195,7 +225,8 @@ export const mongoRouter = router({
       if (!participant) {
         throw new TRPCError({
           code: TRPCErrorCodes.FORBIDDEN,
-          message: "Participant does not belong to the authenticated user in this study",
+          message:
+            "Participant does not belong to the authenticated user in this study",
         });
       }
 
@@ -224,7 +255,7 @@ export const mongoRouter = router({
       z.object({
         studyKey: z.string().min(1),
         surveyKey: z.string().min(1),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.user.id;
@@ -238,7 +269,9 @@ export const mongoRouter = router({
       const studyDb = await getDb(DbKey.STUDY);
       const studiesCol = studyDb.collection(MONGO_COLLECTIONS.studies);
       const surveysCol = studyDb.collection(MONGO_COLLECTIONS.surveys);
-      const participantsCol = studyDb.collection(MONGO_COLLECTIONS.participants);
+      const participantsCol = studyDb.collection(
+        MONGO_COLLECTIONS.participants,
+      );
       const responsesCol = studyDb.collection(MONGO_COLLECTIONS.responses);
 
       const study = await studiesCol.findOne({ key: input.studyKey });
@@ -324,4 +357,46 @@ export const mongoRouter = router({
       }
       return progress;
     }),
+
+  purgeAllOtherUsers: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const userEmail = ctx.user.email;
+      if (!userEmail) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.UNAUTHORIZED,
+          message: "Missing authenticated user email",
+        });
+      }
+
+      const userDb = await getDb(DbKey.USER);
+      const result = await userDb
+        .collection(MONGO_COLLECTIONS.users)
+        .deleteMany({ email: { $ne: userEmail } });
+
+      return { deletedCount: result.deletedCount ?? 0 };
+    } catch (error) {
+      console.error("Error purging other users: " + error);
+      throw new TRPCError({
+        code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
+        message: "Error purging other users",
+      });
+    }
+  }),
+
+  purgeAllResponses: protectedProcedure.mutation(async () => {
+    try {
+      const studyDb = await getDb(DbKey.STUDY);
+      const result = await studyDb
+        .collection(MONGO_COLLECTIONS.responses)
+        .deleteMany({});
+
+      return { deletedCount: result.deletedCount ?? 0 };
+    } catch (error) {
+      console.error("Error purging responses: " + error);
+      throw new TRPCError({
+        code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
+        message: "Error purging responses",
+      });
+    }
+  }),
 });

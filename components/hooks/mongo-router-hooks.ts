@@ -28,6 +28,14 @@ export const useGetResponseCount = () => {
   });
 };
 
+export const useGetDummyUserCount = () => {
+  const trpc = useTRPC();
+  return useQuery({
+    ...trpc.mongo.getDummyUserCount.queryOptions(),
+    ...liveCountQueryOptions,
+  });
+};
+
 export const useLoadSurveyByKey = () => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -88,6 +96,9 @@ export const useSubmitSurveyResponse = () => {
         await queryClient.invalidateQueries(
           trpc.mongo.getRecentParticipantResponsesBySurveyKey.pathFilter(),
         );
+        await queryClient.invalidateQueries(
+          trpc.mongo.getResponseCount.pathFilter(),
+        );
       },
     }),
   );
@@ -95,20 +106,66 @@ export const useSubmitSurveyResponse = () => {
 
 export const useStartAccountStressTest = () => {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   return useMutation(
-    trpc.mongo.startAccountStressTest.mutationOptions(),
+    trpc.mongo.startAccountStressTest.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(
+          trpc.mongo.getDummyUserCount.pathFilter(),
+        );
+        await queryClient.invalidateQueries(
+          trpc.mongo.getUserCount.pathFilter(),
+        );
+      },
+    }),
   );
 };
 
-export const useGetAccountStressTestProgress = (testId: string | null, enabled: boolean = true) => {
+export const useGetAccountStressTestProgress = (
+  testId: string | null,
+  enabled: boolean = true,
+) => {
   const trpc = useTRPC();
   return useQuery({
-    ...trpc.mongo.getAccountStressTestProgress.queryOptions(
-      { testId: testId! },
-    ),
+    ...trpc.mongo.getAccountStressTestProgress.queryOptions({
+      testId: testId!,
+    }),
     enabled: !!testId && enabled,
     refetchInterval: 200,
     staleTime: 0,
     gcTime: 0,
   });
+};
+export const usePurgeAllOtherUsers = () => {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  return useMutation(
+    trpc.mongo.purgeAllOtherUsers.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(
+          trpc.mongo.getUserCount.pathFilter(),
+        );
+        await queryClient.invalidateQueries(
+          trpc.mongo.getDummyUserCount.pathFilter(),
+        );
+      },
+    }),
+  );
+};
+
+export const usePurgeAllResponses = () => {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  return useMutation(
+    trpc.mongo.purgeAllResponses.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(
+          trpc.mongo.getResponseCount.pathFilter(),
+        );
+        await queryClient.invalidateQueries(
+          trpc.mongo.getRecentParticipantResponsesBySurveyKey.pathFilter(),
+        );
+      },
+    }),
+  );
 };

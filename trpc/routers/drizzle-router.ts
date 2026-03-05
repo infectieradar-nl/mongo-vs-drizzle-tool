@@ -6,12 +6,19 @@ import {
   study as studyTable,
   survey as surveyTable,
 } from "@/lib/drizzle-db/schema/study-survey-schemas";
-import { drizzleAuthProcedure as protectedProcedure, router } from "@/trpc/init";
+import {
+  drizzleAuthProcedure as protectedProcedure,
+  router,
+} from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, like, ne } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCErrorCodes } from "../utils";
-import { startStressTest, getStressTestProgress } from "@/lib/auth/account-stress-test";
+import {
+  startStressTest,
+  getStressTestProgress,
+  emailPrefix,
+} from "@/lib/auth/account-stress-test";
 import drizzleAuth from "@/lib/auth/drizzle-auth";
 
 export const drizzleRouter = router({
@@ -28,9 +35,27 @@ export const drizzleRouter = router({
     }
   }),
 
+  getDummyUserCount: protectedProcedure.query(async () => {
+    try {
+      const [result] = await db
+        .select({ count: count() })
+        .from(userTable)
+        .where(like(userTable.email, `${emailPrefix}%`));
+      return result?.count ?? 0;
+    } catch (error) {
+      console.error("Error getting dummy user count: " + error);
+      throw new TRPCError({
+        code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
+        message: "Error getting dummy user count",
+      });
+    }
+  }),
+
   getResponseCount: protectedProcedure.query(async () => {
     try {
-      const [responseCount] = await db.select({ count: count() }).from(responseTable);
+      const [responseCount] = await db
+        .select({ count: count() })
+        .from(responseTable);
       return responseCount?.count ?? 0;
     } catch (error) {
       console.error("Error getting response count: " + error);
@@ -64,7 +89,12 @@ export const drizzleRouter = router({
         })
         .from(surveyTable)
         .innerJoin(studyTable, eq(surveyTable.studyId, studyTable.id))
-        .where(and(eq(studyTable.key, input.studyKey), eq(surveyTable.key, input.surveyKey)))
+        .where(
+          and(
+            eq(studyTable.key, input.studyKey),
+            eq(surveyTable.key, input.surveyKey),
+          ),
+        )
         .limit(1);
 
       if (!surveyResult) {
@@ -157,7 +187,12 @@ export const drizzleRouter = router({
         })
         .from(surveyTable)
         .innerJoin(studyTable, eq(surveyTable.studyId, studyTable.id))
-        .where(and(eq(studyTable.key, input.studyKey), eq(surveyTable.key, input.surveyKey)))
+        .where(
+          and(
+            eq(studyTable.key, input.studyKey),
+            eq(surveyTable.key, input.surveyKey),
+          ),
+        )
         .limit(1);
 
       if (!surveyResult) {
@@ -182,7 +217,8 @@ export const drizzleRouter = router({
       if (!participant) {
         throw new TRPCError({
           code: TRPCErrorCodes.FORBIDDEN,
-          message: "Participant does not belong to the authenticated user in this study",
+          message:
+            "Participant does not belong to the authenticated user in this study",
         });
       }
 
@@ -229,7 +265,12 @@ export const drizzleRouter = router({
         })
         .from(surveyTable)
         .innerJoin(studyTable, eq(surveyTable.studyId, studyTable.id))
-        .where(and(eq(studyTable.key, input.studyKey), eq(surveyTable.key, input.surveyKey)))
+        .where(
+          and(
+            eq(studyTable.key, input.studyKey),
+            eq(surveyTable.key, input.surveyKey),
+          ),
+        )
         .limit(1);
 
       if (!surveyResult) {
@@ -306,4 +347,42 @@ export const drizzleRouter = router({
       }
       return progress;
     }),
+
+  purgeAllOtherUsers: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const userEmail = ctx.user.email;
+      if (!userEmail) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.UNAUTHORIZED,
+          message: "Missing authenticated user email",
+        });
+      }
+
+      const result = await db
+        .delete(userTable)
+        .where(ne(userTable.email, userEmail));
+
+      return { deletedCount: result.rowCount ?? 0 };
+    } catch (error) {
+      console.error("Error purging other users: " + error);
+      throw new TRPCError({
+        code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
+        message: "Error purging other users",
+      });
+    }
+  }),
+
+  purgeAllResponses: protectedProcedure.mutation(async () => {
+    try {
+      const result = await db.delete(responseTable);
+
+      return { deletedCount: result.rowCount ?? 0 };
+    } catch (error) {
+      console.error("Error purging responses: " + error);
+      throw new TRPCError({
+        code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
+        message: "Error purging responses",
+      });
+    }
+  }),
 });

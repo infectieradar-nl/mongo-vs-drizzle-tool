@@ -1,6 +1,7 @@
 import React from "react";
 import Header from "./header";
 import GlobalStats from "./global-stats";
+import Reset from "./reset";
 import TestSurveyFlow from "./test-survey-flow";
 import RecentSurveyResponses from "./recent-survey-responses";
 import AccountStressTest from "./account-stress-test";
@@ -33,8 +34,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         <CardContent>
           <div className="w-full space-y-4">
             <h1 className="text-lg font-bold">Quick Actions</h1>
-            <div className="flex">
+            <div className="flex space-x-4">
               <GlobalStats dbType={dbType} />
+              <Reset dbType={dbType} />
             </div>
             <div className="flex">
               <TestSurveyFlow dbType={dbType} />

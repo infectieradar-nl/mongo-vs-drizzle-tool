@@ -16,6 +16,11 @@ const GlobalStats: React.FC<GlobalStatsProps> = ({ dbType }) => {
     isLoading: responseCountLoading,
     error: responseCountError,
   } = hooks.useGetResponseCount();
+  const {
+    data: dummyUserCount,
+    isLoading: dummyUserCountLoading,
+    error: dummyUserCountError,
+  } = hooks.useGetDummyUserCount();
 
   return (
     <Card className="w-64">
@@ -39,6 +44,14 @@ const GlobalStats: React.FC<GlobalStatsProps> = ({ dbType }) => {
             {responseCountLoading ? "..." : responseCount}
           </span>
         </p>
+        <p className="flex justify-between items-center">
+          <span className="">Dummy users: </span>
+          <span
+            className={`font-bold font-mono text-end min-w-30 bg-muted rounded-md p-1 ${dummyUserCountLoading ? "animate-pulse" : ""}`}
+          >
+            {dummyUserCountLoading ? "..." : dummyUserCount}
+          </span>
+        </p>
         {error && (
           <p className="text-sm text-destructive">
             Error (user count): {error.message}
@@ -47,6 +60,11 @@ const GlobalStats: React.FC<GlobalStatsProps> = ({ dbType }) => {
         {responseCountError && (
           <p className="text-sm text-destructive">
             Error (response count): {responseCountError.message}
+          </p>
+        )}
+        {dummyUserCountError && (
+          <p className="text-sm text-destructive">
+            Error (dummy user count): {dummyUserCountError.message}
           </p>
         )}
       </CardContent>

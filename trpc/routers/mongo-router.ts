@@ -11,6 +11,12 @@ import {
   emailPrefix,
 } from "@/lib/auth/account-stress-test";
 import mongoAuth from "@/lib/auth/mongo-auth";
+import {
+  startContinuousSurveySpam,
+  getContinuousSurveySpamProgress,
+  stopContinuousSurveySpam,
+} from "@/lib/survey-response-spam";
+import { getErrorMessage } from "@/lib/get-error-message";
 
 export const mongoRouter = router({
   getUserCount: protectedProcedure.query(async () => {
@@ -399,4 +405,144 @@ export const mongoRouter = router({
       });
     }
   }),
+
+  startContinuousSurveySpam: protectedProcedure
+    .input(
+      z.object({
+        submissionsPerSecond: z.number().min(0).max(1000),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const studyDb = await getDb(DbKey.STUDY);
+      const surveysCol = studyDb.collection(MONGO_COLLECTIONS.surveys);
+      const studiesCol = studyDb.collection(MONGO_COLLECTIONS.studies);
+
+      // Get all studies
+      const studies = await studiesCol.find({}).toArray();
+      if (!studies || studies.length === 0) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "No studies found",
+        });
+      }
+
+      // Pick a random study
+      const study = studies[Math.floor(Math.random() * studies.length)];
+
+      const surveys = await surveysCol
+        .find({ studyId: study.id })
+        .project({ key: 1 })
+        .toArray();
+
+      if (surveys.length === 0) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "No surveys found for study",
+        });
+      }
+
+      const participantsCol = studyDb.collection(
+        MONGO_COLLECTIONS.participants,
+      );
+
+      // Verify at least one participant exists
+      const participantCount = await participantsCol.countDocuments({
+        studyId: study.id,
+      });
+
+      if (participantCount === 0) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "No participants found in study. Create at least one participant first.",
+        });
+      }
+
+      // Helper function to load and submit a survey response
+      const loadAndSubmitFn = async (surveyKey: string) => {
+        const startTime = performance.now();
+        try {
+          const survey = await surveysCol.findOne({
+            studyId: study.id,
+            key: surveyKey,
+          });
+          if (!survey) {
+            throw new Error("Survey not found");
+          }
+
+          // Pick a random participant
+          const [randomParticipant] = await participantsCol
+            .aggregate([
+              { $match: { studyId: study.id } },
+              { $sample: { size: 1 } },
+            ])
+            .toArray();
+
+          if (!randomParticipant) {
+            throw new Error("No participants found");
+          }
+
+          const responsesCol = studyDb.collection(
+            MONGO_COLLECTIONS.responses,
+          );
+
+          const now = new Date();
+          const responseDoc = {
+            id: randomUUID(),
+            participantId: randomParticipant.id,
+            surveyId: survey.id,
+            data: {
+              source: "continuous-survey-spam",
+              surveyKey: survey.key,
+              submittedAtIso: now.toISOString(),
+            },
+            submittedAt: now,
+          };
+
+          await responsesCol.insertOne(responseDoc);
+
+          const durationMs = Number((performance.now() - startTime).toFixed(2));
+          return { durationMs };
+        } catch (error) {
+          const durationMs = Number((performance.now() - startTime).toFixed(2));
+          return {
+            durationMs,
+            error: getErrorMessage(error, "Unknown error"),
+          };
+        }
+      };
+
+      const testId = startContinuousSurveySpam({
+        surveys: surveys.map((s) => ({ surveyKey: s.key })),
+        submissionsPerSecond: input.submissionsPerSecond,
+        loadAndSubmitFn,
+      });
+
+      return { testId };
+    }),
+
+  getContinuousSurveySpamProgress: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .query(({ input }) => {
+      const progress = getContinuousSurveySpamProgress(input.testId);
+      if (!progress) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Survey spam test not found",
+        });
+      }
+      return progress;
+    }),
+
+  stopContinuousSurveySpam: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .mutation(({ input }) => {
+      const success = stopContinuousSurveySpam(input.testId);
+      if (!success) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Survey spam test not found or already stopped",
+        });
+      }
+      return { success: true };
+    }),
 });

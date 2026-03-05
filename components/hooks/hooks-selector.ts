@@ -13,6 +13,9 @@ export interface DashboardHooks {
   useGetAccountStressTestProgress: typeof drizzleHooks.useGetAccountStressTestProgress;
   usePurgeAllOtherUsers: typeof drizzleHooks.usePurgeAllOtherUsers;
   usePurgeAllResponses: typeof drizzleHooks.usePurgeAllResponses;
+  useStartContinuousSurveySpam: typeof drizzleHooks.useStartContinuousSurveySpam;
+  useGetContinuousSurveySpamProgress: typeof drizzleHooks.useGetContinuousSurveySpamProgress;
+  useStopContinuousSurveySpam: typeof drizzleHooks.useStopContinuousSurveySpam;
 }
 
 export const dashboardHooks: Record<DatabaseType, DashboardHooks> = {

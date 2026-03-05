@@ -11,7 +11,7 @@ import {
   router,
 } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { and, count, desc, eq, like, ne } from "drizzle-orm";
+import { and, count, desc, eq, like, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { TRPCErrorCodes } from "../utils";
 import {
@@ -20,6 +20,12 @@ import {
   emailPrefix,
 } from "@/lib/auth/account-stress-test";
 import drizzleAuth from "@/lib/auth/drizzle-auth";
+import {
+  startContinuousSurveySpam,
+  getContinuousSurveySpamProgress,
+  stopContinuousSurveySpam,
+} from "@/lib/survey-response-spam";
+import { getErrorMessage } from "@/lib/get-error-message";
 
 export const drizzleRouter = router({
   getUserCount: protectedProcedure.query(async () => {
@@ -385,4 +391,142 @@ export const drizzleRouter = router({
       });
     }
   }),
+
+  startContinuousSurveySpam: protectedProcedure
+    .input(
+      z.object({
+        submissionsPerSecond: z.number().min(0).max(1000),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      // Get all studies
+      const studies = await db.select().from(studyTable);
+
+      if (studies.length === 0) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "No studies found",
+        });
+      }
+
+      // Pick a random study
+      const study = studies[Math.floor(Math.random() * studies.length)];
+
+      // Get all surveys for the study
+      const surveys = await db
+        .select({ key: surveyTable.key })
+        .from(surveyTable)
+        .where(eq(surveyTable.studyId, study.id));
+
+      if (surveys.length === 0) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "No surveys found for study",
+        });
+      }
+
+      // Verify at least one participant exists
+      const participantCount = await db
+        .select({ count: count() })
+        .from(participantTable)
+        .where(eq(participantTable.studyId, study.id));
+
+      if ((participantCount[0]?.count ?? 0) === 0) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "No participants found in study. Create at least one participant first.",
+        });
+      }
+
+      // Helper function to load and submit a survey response
+      const loadAndSubmitFn = async (surveyKey: string) => {
+        const startTime = performance.now();
+        try {
+          // Load survey
+          const [surveyResult] = await db
+            .select({
+              survey: surveyTable,
+            })
+            .from(surveyTable)
+            .where(
+              and(
+                eq(surveyTable.studyId, study.id),
+                eq(surveyTable.key, surveyKey),
+              ),
+            )
+            .limit(1);
+
+          if (!surveyResult) {
+            throw new Error("Survey not found");
+          }
+
+          // Pick a random participant
+          const [randomParticipant] = await db
+            .select({ id: participantTable.id })
+            .from(participantTable)
+            .where(eq(participantTable.studyId, study.id))
+            .orderBy(sql`RANDOM()`)
+            .limit(1);
+
+          if (!randomParticipant) {
+            throw new Error("No participants found");
+          }
+
+          // Submit response
+          await db.insert(responseTable).values({
+            participantId: randomParticipant.id,
+            surveyId: surveyResult.survey.id,
+            data: {
+              source: "continuous-survey-spam",
+              surveyKey: surveyResult.survey.key,
+              submittedAtIso: new Date().toISOString(),
+            },
+            submittedAt: new Date(),
+          });
+
+          const durationMs = Number((performance.now() - startTime).toFixed(2));
+          return { durationMs };
+        } catch (error) {
+          const durationMs = Number((performance.now() - startTime).toFixed(2));
+          return {
+            durationMs,
+            error: getErrorMessage(error, "Unknown error"),
+          };
+        }
+      };
+
+      const testId = startContinuousSurveySpam({
+        surveys: surveys.map((s) => ({ surveyKey: s.key })),
+        submissionsPerSecond: input.submissionsPerSecond,
+        loadAndSubmitFn,
+      });
+
+      return { testId };
+    }),
+
+  getContinuousSurveySpamProgress: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .query(({ input }) => {
+      const progress = getContinuousSurveySpamProgress(input.testId);
+      if (!progress) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Survey spam test not found",
+        });
+      }
+      return progress;
+    }),
+
+  stopContinuousSurveySpam: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .mutation(({ input }) => {
+      const success = stopContinuousSurveySpam(input.testId);
+      if (!success) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Survey spam test not found or already stopped",
+        });
+      }
+      return { success: true };
+    }),
 });

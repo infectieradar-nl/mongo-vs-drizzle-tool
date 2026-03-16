@@ -23,7 +23,9 @@ const ContinuousSurveyResponses: React.FC<ContinuousSurveyResponsesProps> = ({
 }) => {
   const hooks = dashboardHooks[dbType];
 
-  const [submissionsPerSecond, setSubmissionsPerSecond] = useState<number | null>(null);
+  const [submissionsPerSecond, setSubmissionsPerSecond] = useState<
+    number | null
+  >(null);
   const [testId, setTestId] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
 
@@ -67,7 +69,9 @@ const ContinuousSurveyResponses: React.FC<ContinuousSurveyResponsesProps> = ({
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>Continuous Survey Responses</CardTitle>
-        <CardDescription>Load Survey → Submit Response</CardDescription>
+        <CardDescription>
+          Load a Survey → Find a Participant → Submit Response
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -81,9 +85,16 @@ const ContinuousSurveyResponses: React.FC<ContinuousSurveyResponsesProps> = ({
             step={0.1}
             placeholder="Leave empty for unlimited"
             value={submissionsPerSecond ?? ""}
-            onChange={(e) => setSubmissionsPerSecond(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) =>
+              setSubmissionsPerSecond(
+                e.target.value ? Number(e.target.value) : null,
+              )
+            }
             disabled={isActive}
           />
+          <p className="text-xs text-muted-foreground">
+            0–1,000 (0 = unlimited)
+          </p>
         </div>
 
         {/* Action button */}
@@ -126,9 +137,16 @@ const ContinuousSurveyResponses: React.FC<ContinuousSurveyResponsesProps> = ({
               </div>
 
               <div>
-                <p className="text-muted-foreground">Achieved SPS</p>
+                <p className="text-muted-foreground">Current SPS</p>
                 <p className="font-mono font-semibold">
                   {progress.submissionsPerSecond ?? "—"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground">Overall SPS</p>
+                <p className="font-mono font-semibold">
+                  {progress.overallSubmissionsPerSecond ?? "—"}
                 </p>
               </div>
 

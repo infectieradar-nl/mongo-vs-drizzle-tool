@@ -87,6 +87,7 @@ const AccountStressTest: React.FC<AccountStressTestProps> = ({ dbType }) => {
               onChange={(e) => setTotalCount(Number(e.target.value) || 1)}
               disabled={isRunning}
             />
+            <p className="text-xs text-muted-foreground">1–10,000</p>
           </div>
 
           <div className="space-y-1.5">
@@ -101,6 +102,7 @@ const AccountStressTest: React.FC<AccountStressTestProps> = ({ dbType }) => {
               onChange={(e) => setConcurrencyLimit(Number(e.target.value) || 0)}
               disabled={isRunning}
             />
+            <p className="text-xs text-muted-foreground">0–10,000 (0 = unlimited)</p>
           </div>
         </div>
 

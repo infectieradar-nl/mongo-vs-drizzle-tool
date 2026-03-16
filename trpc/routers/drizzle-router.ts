@@ -19,12 +19,17 @@ import {
   getStressTestProgress,
   emailPrefix,
 } from "@/lib/auth/account-stress-test";
-import drizzleAuth from "@/lib/auth/drizzle-auth";
+import { drizzleAuth } from "@/lib/auth/drizzle-auth";
 import {
   startContinuousSurveySpam,
   getContinuousSurveySpamProgress,
   stopContinuousSurveySpam,
 } from "@/lib/survey-response-spam";
+import {
+  startContinuousResponseLookup,
+  getContinuousResponseLookupProgress,
+  stopContinuousResponseLookup,
+} from "@/lib/continuous-response-lookup";
 import { getErrorMessage } from "@/lib/get-error-message";
 
 export const drizzleRouter = router({
@@ -110,57 +115,23 @@ export const drizzleRouter = router({
         });
       }
 
-      const participant = await db.transaction(async (tx) => {
-        const [existingParticipant] = await tx
-          .select()
-          .from(participantTable)
-          .where(
-            and(
-              eq(participantTable.studyId, surveyResult.study.id),
-              eq(participantTable.userId, userId),
-            ),
-          )
-          .limit(1);
+      const [participant] = await db
+        .select()
+        .from(participantTable)
+        .where(
+          and(
+            eq(participantTable.studyId, surveyResult.study.id),
+            eq(participantTable.userId, userId),
+          ),
+        )
+        .limit(1);
 
-        if (existingParticipant) {
-          return existingParticipant;
-        }
-
-        const [createdParticipant] = await tx
-          .insert(participantTable)
-          .values({
-            studyId: surveyResult.study.id,
-            userId,
-          })
-          .onConflictDoNothing({
-            target: [participantTable.studyId, participantTable.userId],
-          })
-          .returning();
-
-        if (createdParticipant) {
-          return createdParticipant;
-        }
-
-        const [participantAfterConflict] = await tx
-          .select()
-          .from(participantTable)
-          .where(
-            and(
-              eq(participantTable.studyId, surveyResult.study.id),
-              eq(participantTable.userId, userId),
-            ),
-          )
-          .limit(1);
-
-        if (!participantAfterConflict) {
-          throw new TRPCError({
-            code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
-            message: "Failed to load or create participant",
-          });
-        }
-
-        return participantAfterConflict;
-      });
+      if (!participant) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.FORBIDDEN,
+          message: "User is not a participant in this study",
+        });
+      }
 
       return {
         survey: surveyResult.survey,
@@ -434,7 +405,8 @@ export const drizzleRouter = router({
       if ((participantCount[0]?.count ?? 0) === 0) {
         throw new TRPCError({
           code: TRPCErrorCodes.NOT_FOUND,
-          message: "No participants found in study. Create at least one participant first.",
+          message:
+            "No participants found in study. Create at least one participant first.",
         });
       }
 
@@ -525,6 +497,100 @@ export const drizzleRouter = router({
         throw new TRPCError({
           code: TRPCErrorCodes.NOT_FOUND,
           message: "Survey spam test not found or already stopped",
+        });
+      }
+      return { success: true };
+    }),
+
+  startContinuousResponseLookup: protectedProcedure
+    .input(
+      z.object({
+        lookupsPerSecond: z.number().min(0).max(1000),
+        batchSize: z.number().int().min(1).max(100),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      // Verify at least one participant exists
+      const participantCount = await db
+        .select({ count: count() })
+        .from(participantTable);
+
+      if ((participantCount[0]?.count ?? 0) === 0) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message:
+            "No participants found. Create at least one participant first.",
+        });
+      }
+
+      // Helper function to lookup responses for random participants in parallel
+      const lookupFn = async () => {
+        const startTime = performance.now();
+        try {
+          // Pick random participants (batch)
+          const randomParticipants = await db
+            .select({ id: participantTable.id })
+            .from(participantTable)
+            .orderBy(sql`RANDOM()`)
+            .limit(input.batchSize);
+
+          if (randomParticipants.length === 0) {
+            throw new Error("No participants found");
+          }
+
+          // Fetch responses for all participants in parallel
+          const participantIds = randomParticipants.map((p) => p.id);
+          const responsesPromises = participantIds.map((participantId) =>
+            db
+              .select()
+              .from(responseTable)
+              .where(eq(responseTable.participantId, participantId)),
+          );
+
+          const allResponses = await Promise.all(responsesPromises);
+          const totalResponseCount = allResponses.flat().length;
+
+          const durationMs = Number((performance.now() - startTime).toFixed(2));
+          return { durationMs, responseCount: totalResponseCount };
+        } catch (error) {
+          const durationMs = Number((performance.now() - startTime).toFixed(2));
+          return {
+            durationMs,
+            error: getErrorMessage(error, "Unknown error"),
+          };
+        }
+      };
+
+      const testId = startContinuousResponseLookup({
+        lookupsPerSecond: input.lookupsPerSecond,
+        batchSize: input.batchSize,
+        lookupFn,
+      });
+
+      return { testId };
+    }),
+
+  getContinuousResponseLookupProgress: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .query(({ input }) => {
+      const progress = getContinuousResponseLookupProgress(input.testId);
+      if (!progress) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Response lookup test not found",
+        });
+      }
+      return progress;
+    }),
+
+  stopContinuousResponseLookup: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .mutation(({ input }) => {
+      const success = stopContinuousResponseLookup(input.testId);
+      if (!success) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Response lookup test not found or already stopped",
         });
       }
       return { success: true };

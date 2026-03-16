@@ -10,12 +10,17 @@ import {
   getStressTestProgress,
   emailPrefix,
 } from "@/lib/auth/account-stress-test";
-import mongoAuth from "@/lib/auth/mongo-auth";
+import { mongoAuth } from "@/lib/auth/mongo-auth";
 import {
   startContinuousSurveySpam,
   getContinuousSurveySpamProgress,
   stopContinuousSurveySpam,
 } from "@/lib/survey-response-spam";
+import {
+  startContinuousResponseLookup,
+  getContinuousResponseLookupProgress,
+  stopContinuousResponseLookup,
+} from "@/lib/continuous-response-lookup";
 import { getErrorMessage } from "@/lib/get-error-message";
 
 export const mongoRouter = router({
@@ -113,48 +118,15 @@ export const mongoRouter = router({
 
       const studyId = study.id as string;
 
-      let participant = await participantsCol.findOne({
+      const participant = await participantsCol.findOne({
         studyId,
         userId,
       });
 
       if (!participant) {
-        const participantId = randomUUID();
-        const now = new Date();
-        try {
-          await participantsCol.insertOne({
-            id: participantId,
-            studyId,
-            userId,
-            createdAt: now,
-            updatedAt: now,
-          });
-        } catch {
-          const existing = await participantsCol.findOne({
-            studyId,
-            userId,
-          });
-          if (!existing) {
-            throw new TRPCError({
-              code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
-              message: "Failed to load or create participant",
-            });
-          }
-          participant = existing;
-        }
-      }
-
-      if (!participant) {
-        participant = await participantsCol.findOne({
-          studyId,
-          userId,
-        });
-      }
-
-      if (!participant) {
         throw new TRPCError({
-          code: TRPCErrorCodes.INTERNAL_SERVER_ERROR,
-          message: "Failed to load or create participant",
+          code: TRPCErrorCodes.FORBIDDEN,
+          message: "User is not a participant in this study",
         });
       }
 
@@ -453,7 +425,8 @@ export const mongoRouter = router({
       if (participantCount === 0) {
         throw new TRPCError({
           code: TRPCErrorCodes.NOT_FOUND,
-          message: "No participants found in study. Create at least one participant first.",
+          message:
+            "No participants found in study. Create at least one participant first.",
         });
       }
 
@@ -481,9 +454,7 @@ export const mongoRouter = router({
             throw new Error("No participants found");
           }
 
-          const responsesCol = studyDb.collection(
-            MONGO_COLLECTIONS.responses,
-          );
+          const responsesCol = studyDb.collection(MONGO_COLLECTIONS.responses);
 
           const now = new Date();
           const responseDoc = {
@@ -541,6 +512,98 @@ export const mongoRouter = router({
         throw new TRPCError({
           code: TRPCErrorCodes.NOT_FOUND,
           message: "Survey spam test not found or already stopped",
+        });
+      }
+      return { success: true };
+    }),
+
+  startContinuousResponseLookup: protectedProcedure
+    .input(
+      z.object({
+        lookupsPerSecond: z.number().min(0).max(1000),
+        batchSize: z.number().int().min(1).max(100),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const studyDb = await getDb(DbKey.STUDY);
+      const participantsCol = studyDb.collection(
+        MONGO_COLLECTIONS.participants,
+      );
+
+      // Verify at least one participant exists
+      const participantCount = await participantsCol.countDocuments();
+
+      if (participantCount === 0) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message:
+            "No participants found. Create at least one participant first.",
+        });
+      }
+
+      // Helper function to lookup responses for random participants in parallel
+      const lookupFn = async () => {
+        const startTime = performance.now();
+        try {
+          // Pick random participants (batch)
+          const randomParticipants = await participantsCol
+            .aggregate([{ $sample: { size: input.batchSize } }])
+            .toArray();
+
+          if (randomParticipants.length === 0) {
+            throw new Error("No participants found");
+          }
+
+          // Fetch responses for all participants in parallel
+          const responsesCol = studyDb.collection(MONGO_COLLECTIONS.responses);
+          const responsesPromises = randomParticipants.map((participant) =>
+            responsesCol.find({ participantId: participant.id }).toArray(),
+          );
+
+          const allResponses = await Promise.all(responsesPromises);
+          const totalResponseCount = allResponses.flat().length;
+
+          const durationMs = Number((performance.now() - startTime).toFixed(2));
+          return { durationMs, responseCount: totalResponseCount };
+        } catch (error) {
+          const durationMs = Number((performance.now() - startTime).toFixed(2));
+          return {
+            durationMs,
+            error: getErrorMessage(error, "Unknown error"),
+          };
+        }
+      };
+
+      const testId = startContinuousResponseLookup({
+        lookupsPerSecond: input.lookupsPerSecond,
+        batchSize: input.batchSize,
+        lookupFn,
+      });
+
+      return { testId };
+    }),
+
+  getContinuousResponseLookupProgress: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .query(({ input }) => {
+      const progress = getContinuousResponseLookupProgress(input.testId);
+      if (!progress) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Response lookup test not found",
+        });
+      }
+      return progress;
+    }),
+
+  stopContinuousResponseLookup: protectedProcedure
+    .input(z.object({ testId: z.string().min(1) }))
+    .mutation(({ input }) => {
+      const success = stopContinuousResponseLookup(input.testId);
+      if (!success) {
+        throw new TRPCError({
+          code: TRPCErrorCodes.NOT_FOUND,
+          message: "Response lookup test not found or already stopped",
         });
       }
       return { success: true };

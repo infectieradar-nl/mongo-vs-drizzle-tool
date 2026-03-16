@@ -6,6 +6,7 @@ import TestSurveyFlow from "./test-survey-flow";
 import RecentSurveyResponses from "./recent-survey-responses";
 import AccountStressTest from "./account-stress-test";
 import ContinuousSurveyResponses from "./continuous-survey-responses";
+import ContinuousResponseLookup from "./continuous-response-lookup";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatabaseType, SignupAuthClient } from "../../../lib/types";
 
@@ -45,6 +46,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="flex space-x-4">
               <AccountStressTest dbType={dbType} />
               <ContinuousSurveyResponses dbType={dbType} />
+              <ContinuousResponseLookup dbType={dbType} />
             </div>
             <RecentSurveyResponses dbType={dbType} />
           </div>

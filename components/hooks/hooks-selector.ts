@@ -16,6 +16,9 @@ export interface DashboardHooks {
   useStartContinuousSurveySpam: typeof drizzleHooks.useStartContinuousSurveySpam;
   useGetContinuousSurveySpamProgress: typeof drizzleHooks.useGetContinuousSurveySpamProgress;
   useStopContinuousSurveySpam: typeof drizzleHooks.useStopContinuousSurveySpam;
+  useStartContinuousResponseLookup: typeof drizzleHooks.useStartContinuousResponseLookup;
+  useGetContinuousResponseLookupProgress: typeof drizzleHooks.useGetContinuousResponseLookupProgress;
+  useStopContinuousResponseLookup: typeof drizzleHooks.useStopContinuousResponseLookup;
 }
 
 export const dashboardHooks: Record<DatabaseType, DashboardHooks> = {

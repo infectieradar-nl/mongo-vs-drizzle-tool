@@ -172,9 +172,7 @@ export const usePurgeAllResponses = () => {
 
 export const useStartContinuousSurveySpam = () => {
   const trpc = useTRPC();
-  return useMutation(
-    trpc.drizzle.startContinuousSurveySpam.mutationOptions(),
-  );
+  return useMutation(trpc.drizzle.startContinuousSurveySpam.mutationOptions());
 };
 
 export const useGetContinuousSurveySpamProgress = (
@@ -195,7 +193,35 @@ export const useGetContinuousSurveySpamProgress = (
 
 export const useStopContinuousSurveySpam = () => {
   const trpc = useTRPC();
+  return useMutation(trpc.drizzle.stopContinuousSurveySpam.mutationOptions());
+};
+
+export const useStartContinuousResponseLookup = () => {
+  const trpc = useTRPC();
   return useMutation(
-    trpc.drizzle.stopContinuousSurveySpam.mutationOptions(),
+    trpc.drizzle.startContinuousResponseLookup.mutationOptions(),
+  );
+};
+
+export const useGetContinuousResponseLookupProgress = (
+  testId: string | null,
+  enabled: boolean = true,
+) => {
+  const trpc = useTRPC();
+  return useQuery({
+    ...trpc.drizzle.getContinuousResponseLookupProgress.queryOptions({
+      testId: testId!,
+    }),
+    enabled: !!testId && enabled,
+    refetchInterval: 500,
+    staleTime: 0,
+    gcTime: 0,
+  });
+};
+
+export const useStopContinuousResponseLookup = () => {
+  const trpc = useTRPC();
+  return useMutation(
+    trpc.drizzle.stopContinuousResponseLookup.mutationOptions(),
   );
 };

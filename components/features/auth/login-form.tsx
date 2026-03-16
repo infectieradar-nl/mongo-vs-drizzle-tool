@@ -1,25 +1,36 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Controller, useForm } from "react-hook-form"
-import { toast } from "sonner"
-import { z } from "zod"
+import Link from "next/link";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
-import { LoadingButton } from "@/components/c-ui/loading-button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { drizzleAuthClient } from "@/lib/auth/drizzle-auth-client"
-import { mongoAuthClient } from "@/lib/auth/mongo-auth-client"
-import { LoginAuthClient } from "@/lib/types"
+import { LoadingButton } from "@/components/c-ui/loading-button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { drizzleAuthClient } from "@/lib/auth/drizzle-auth-client";
+import { mongoAuthClient } from "@/lib/auth/mongo-auth-client";
+import { LoginAuthClient } from "@/lib/types";
 
 type LoginFormProps = {
-  title: string
-  authClient: LoginAuthClient
-  signupHref?: string
-  callbackURL?: string
-}
+  title: string;
+  authClient: LoginAuthClient;
+  signupHref?: string;
+  callbackURL?: string;
+};
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -27,66 +38,77 @@ const loginSchema = z.object({
     .string()
     .min(1, "Password is required.")
     .max(128, "Password is too long."),
-})
+});
 
-type LoginValues = z.infer<typeof loginSchema>
+type LoginValues = z.infer<typeof loginSchema>;
 
 const defaultSignupHref: Record<LoginAuthClient, string> = {
   mongo: "/mongo/signup",
   drizzle: "/drizzle/signup",
-}
+};
 
 const getErrorMessage = (error: unknown): string => {
   if (typeof error === "string") {
-    return error
+    return error;
   }
 
   if (error && typeof error === "object") {
-    const message = (error as { message?: unknown }).message
+    const message = (error as { message?: unknown }).message;
     if (typeof message === "string" && message.length > 0) {
-      return message
+      return message;
     }
   }
 
-  return "Login failed. Please check your credentials and try again."
-}
+  return "Login failed. Please check your credentials and try again.";
+};
 
-export function LoginForm({ title, authClient, signupHref, callbackURL }: LoginFormProps) {
+export function LoginForm({
+  title,
+  authClient,
+  signupHref,
+  callbackURL,
+}: LoginFormProps) {
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
     },
-  })
+  });
 
   const onSubmit = async (values: LoginValues) => {
-    const client = authClient === "mongo" ? mongoAuthClient : drizzleAuthClient
+    const client = authClient === "mongo" ? mongoAuthClient : drizzleAuthClient;
 
     try {
       const result = await client.signIn.email({
         email: values.email,
         password: values.password,
         callbackURL,
-      })
+      });
 
       if (result.error) {
-        toast.error(getErrorMessage(result.error))
+        toast.error(getErrorMessage(result.error));
       }
     } catch (error) {
-      toast.error(getErrorMessage(error))
+      toast.error(getErrorMessage(error));
     }
-  }
+  };
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>Enter your email and password to continue.</CardDescription>
+        <CardDescription>
+          Enter your email and password to continue.
+        </CardDescription>
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           <Controller
             name="email"
             control={form.control}
@@ -119,23 +141,33 @@ export function LoginForm({ title, authClient, signupHref, callbackURL }: LoginF
                   autoComplete="current-password"
                   aria-invalid={fieldState.invalid}
                 />
+                <FieldDescription className="text-red-500 italic">
+                  Insecure password storage. Never use real credentials.
+                </FieldDescription>
                 <FieldError errors={[fieldState.error]} />
               </Field>
             )}
           />
 
-          <LoadingButton type="submit" className="w-full" isLoading={form.formState.isSubmitting}>
+          <LoadingButton
+            type="submit"
+            className="w-full"
+            isLoading={form.formState.isSubmitting}
+          >
             Log in
           </LoadingButton>
 
           <p className="text-muted-foreground text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href={signupHref ?? defaultSignupHref[authClient]} className="text-primary font-medium hover:underline">
+            <Link
+              href={signupHref ?? defaultSignupHref[authClient]}
+              className="text-primary font-medium hover:underline"
+            >
               Sign up
             </Link>
           </p>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

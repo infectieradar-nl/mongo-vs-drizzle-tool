@@ -3,8 +3,10 @@ export interface ContinuousSurveySpamProgress {
   totalSubmitted: number;
   errors: string[];
   durations: number[];
+  timestamps: number[];
   averageDurationMs: number | null;
   submissionsPerSecond: number | null;
+  overallSubmissionsPerSecond: number | null;
   startedAtMs: number | null;
   stoppedAtMs: number | null;
 }
@@ -19,6 +21,7 @@ interface RunningTest {
 const store = new Map<string, RunningTest>();
 
 let nextId = 0;
+let currentActiveTestId: string | null = null;
 
 function generateTestId(): string {
   nextId += 1;
@@ -31,15 +34,30 @@ export function getContinuousSurveySpamProgress(
   const test = store.get(testId);
   if (!test) return null;
 
-  // Recalculate RPS based on elapsed time
+  // Recalculate current SPS based on last 100 operations
   let submissionsPerSecond: number | null = null;
+  if (test.progress.timestamps.length >= 2) {
+    const lastTimestamp =
+      test.progress.timestamps[test.progress.timestamps.length - 1];
+    const firstTimestamp = test.progress.timestamps[0];
+    const timeSpanMs = lastTimestamp - firstTimestamp;
+
+    if (timeSpanMs > 0) {
+      submissionsPerSecond = Number(
+        ((test.progress.timestamps.length * 1000) / timeSpanMs).toFixed(2),
+      );
+    }
+  }
+
+  // Calculate overall SPS based on entire lifetime
+  let overallSubmissionsPerSecond: number | null = null;
   if (test.progress.startedAtMs !== null) {
     const elapsedMs = test.progress.running
       ? Date.now() - test.progress.startedAtMs
       : (test.progress.stoppedAtMs ?? Date.now()) - test.progress.startedAtMs;
 
     if (elapsedMs > 0) {
-      submissionsPerSecond = Number(
+      overallSubmissionsPerSecond = Number(
         ((test.progress.totalSubmitted * 1000) / elapsedMs).toFixed(2),
       );
     }
@@ -48,6 +66,7 @@ export function getContinuousSurveySpamProgress(
   return {
     ...test.progress,
     submissionsPerSecond,
+    overallSubmissionsPerSecond,
   };
 }
 
@@ -58,6 +77,11 @@ export function stopContinuousSurveySpam(testId: string): boolean {
   test.abortController.abort();
   test.progress.running = false;
   test.progress.stoppedAtMs = Date.now();
+
+  // Clear active test ID if this was the active one
+  if (currentActiveTestId === testId) {
+    currentActiveTestId = null;
+  }
 
   // Clean up after a short delay
   setTimeout(() => {
@@ -76,7 +100,13 @@ export interface SpamConfig {
 }
 
 export function startContinuousSurveySpam(config: SpamConfig): string {
+  // Stop any previously running test to prevent orphaned processes after hot reload
+  if (currentActiveTestId) {
+    stopContinuousSurveySpam(currentActiveTestId);
+  }
+
   const testId = generateTestId();
+  currentActiveTestId = testId;
   const abortController = new AbortController();
 
   const progress: ContinuousSurveySpamProgress = {
@@ -84,14 +114,17 @@ export function startContinuousSurveySpam(config: SpamConfig): string {
     totalSubmitted: 0,
     errors: [],
     durations: [],
+    timestamps: [],
     averageDurationMs: null,
     submissionsPerSecond: null,
+    overallSubmissionsPerSecond: null,
     startedAtMs: Date.now(),
     stoppedAtMs: null,
   };
 
   // Calculate delay between submissions (0 = unlimited, no delay)
-  const delayMs = config.submissionsPerSecond > 0 ? 1000 / config.submissionsPerSecond : 0;
+  const delayMs =
+    config.submissionsPerSecond > 0 ? 1000 / config.submissionsPerSecond : 0;
 
   // Spam function that runs in background
   const spamFunc = async () => {
@@ -107,10 +140,12 @@ export function startContinuousSurveySpam(config: SpamConfig): string {
 
         progress.totalSubmitted += 1;
         progress.durations.push(result.durationMs);
+        progress.timestamps.push(Date.now());
 
-        // Keep only last 100 durations to avoid memory bloat
+        // Keep only last 100 durations and timestamps to avoid memory bloat
         if (progress.durations.length > 100) {
           progress.durations.shift();
+          progress.timestamps.shift();
         }
 
         if (result.error) {

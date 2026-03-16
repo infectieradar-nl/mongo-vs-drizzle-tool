@@ -43,7 +43,7 @@ const ContinuousResponseLookup: React.FC<ContinuousResponseLookupProps> = ({
       });
       setTestId(result.testId);
       setIsActive(true);
-    } catch (error) {
+    } catch {
       // Error handled by mutation state
     }
   };

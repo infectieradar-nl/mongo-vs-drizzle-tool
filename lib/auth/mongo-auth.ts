@@ -42,7 +42,7 @@ export const mongoAuth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        after: async (newUser, ctx) => {
+        after: async (newUser) => {
           await createParticipant(newUser.id);
         },
       },

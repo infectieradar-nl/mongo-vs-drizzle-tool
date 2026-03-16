@@ -8,7 +8,9 @@ export const DbKey = {
 export type DbKey = (typeof DbKey)[keyof typeof DbKey];
 
 const options: MongoClientOptions = {
-  maxPoolSize: 5,
+  maxPoolSize: 50,
+  minPoolSize: 10,
+  maxIdleTimeMS: 60000,
 };
 
 function mustGetEnv(key: string): string {
@@ -54,7 +56,10 @@ export async function getDb(key: DbKey): Promise<Db> {
 }
 
 export async function getAllDbs(): Promise<Record<DbKey, Db>> {
-  const [user, study] = await Promise.all([getDb(DbKey.USER), getDb(DbKey.STUDY)]);
+  const [user, study] = await Promise.all([
+    getDb(DbKey.USER),
+    getDb(DbKey.STUDY),
+  ]);
 
   return { user, study };
 }
